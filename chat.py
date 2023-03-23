@@ -13,21 +13,14 @@ chatbot = Chatbot(config={
 })
 
 
-@app.get("/ping")
-def ping():
-    return {"message": "pong"}
-
 
 @app.post("/chat")
 async def chatGPT(body: dict = Body(...)):
-    prompt = body["prompt"]
-    print("User: " + prompt)
+    prompt = body["text"]
+    session = body["session"]
+    print("User({}): {}".format(session, prompt))
     print("Chatbot: ", end="")
     try:
-        if prompt == "!reset":
-            chatbot.reset_chat()
-            print("OK")
-            return {"message": "OK"}
         answer = ""
         for data in chatbot.ask(
             prompt,
@@ -38,10 +31,20 @@ async def chatGPT(body: dict = Body(...)):
             print(message, end="", flush=True)
             answer = data["message"]
         print()
+        response = {"text": answer, "session": session}
+        return {"data": response}
     except:
         answer = "ERROR"
         pass
-    return {"message": answer}
+    response = {"text": answer, "session": session}
+    return {"data": response}
+
+@app.post("/reset")
+async def reset_chat():
+    chatbot.reset_chat()
+    return {"message": "OK"}
+
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host=HOST, port=PORT)
